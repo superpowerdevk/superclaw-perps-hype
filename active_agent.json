@@ -1,0 +1,5 @@
+{
+  "agent_id": "agt_a76286d4c89efe88",
+  "network": "mainnet",
+  "_comment": "Curated SuperClaw HYPE perps copy-trade agent. Edit agent_id here to change the agent for everyone; running claws pick it up on next start/resume/sync."
+}
