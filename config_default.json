@@ -144,5 +144,5 @@
   "update_manifest_url": "https://raw.githubusercontent.com/moss-site/Hyperliquid-copy-trade/main/VERSION.json",
   "subaccount_name": "sc-hype",
   "subaccount_address": "",
-  "require_subaccount": true
+  "require_subaccount": false
 }

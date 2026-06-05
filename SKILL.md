@@ -1,26 +1,25 @@
 ---
 name: superclaw-perps-hype
-description: Manage the SuperClaw HYPE perpetual copy-trading service on Hyperliquid. Use when the user wants to start/stop/check the follow service, generate an agent wallet, create/fund the isolated sub-account, complete authorization, view the curated agent's track record, view trade history/stats, or sync to the latest curated agent. The followed agent trades HYPE perps only, is selected centrally by the SuperClaw admin, and is resolved automatically at service start - the user never picks a trader.
+description: Manage the SuperClaw HYPE perpetual copy-trading service on Hyperliquid. Use when the user wants to start/stop/check the follow service, generate an agent wallet, complete authorization, view the curated agent's track record, view trade history/stats, or sync to the latest curated agent. The followed agent trades HYPE perps only, runs on a dedicated Hyperliquid account, is selected centrally by the SuperClaw admin, and is resolved automatically at service start - the user never picks a trader.
 ---
 
 # SuperClaw HYPE Perps Copy-Trade — Interaction Flow (EN)
 
 > For SuperClaw / OpenClaw skill development. Describes the Bot's full in-conversation behavior.
-> This skill copy-trades a single curated **HYPE-perp** agent on Hyperliquid into the user's own **isolated sub-account** (`sc-hype`), so HYPE risk is ring-fenced from other SuperClaw skills.
+> This skill copy-trades a single curated **HYPE-perp** agent on Hyperliquid. For isolation it runs on a **dedicated Hyperliquid account** (a fresh wallet used only for HYPE) — separate from the user's other SuperClaw skills.
 > The followed agent is selected centrally by the SuperClaw admin. At service start the CLI resolves it from the remote pointer `agent_pointer_url` and writes it into `moss_source.agent_id`. The user never picks, inputs, or changes the agent.
 
 ---
 
 ## Overview
 
-After installing the SuperClaw HYPE Perps Copy-Trade skill, the user can — via conversation — automatically follow a centrally-curated **HYPE-perp** agent on Hyperliquid, mirrored into their own **isolated sub-account** (`sc-hype`). The followed agent is **not chosen by the user**; it is resolved automatically from the official remote pointer at service start/resume.
+After installing the SuperClaw HYPE Perps Copy-Trade skill, the user can — via conversation — automatically follow a centrally-curated **HYPE-perp** agent on Hyperliquid. For isolation, this skill runs on its **own dedicated Hyperliquid account** (a fresh wallet used only for HYPE). The followed agent is **not chosen by the user**; it is resolved automatically from the official remote pointer at service start/resume.
 
-The flow has four stages:
+The flow has three stages:
 
-1. Wallet setup (connect main wallet + generate Agent Wallet + sign & register)
-2. Sub-account setup (create the isolated `sc-hype` sub-account + fund it)
-3. Configure copy-trade parameters (ratio, stop-loss, slippage)
-4. Run & manage (status, pause, sync latest agent, view agent track record, stop)
+1. Wallet setup (connect a **dedicated** main wallet + generate Agent Wallet + sign & register)
+2. Configure copy-trade parameters (ratio, stop-loss, slippage)
+3. Run & manage (status, pause, sync latest agent, view agent track record, stop)
 
 > **Agent selection**: the user neither needs to nor can pick a trader in conversation. The active agent is delivered by the admin via the `agent_pointer_url` remote pointer and written into config at service start. After a device change/reinstall the user still pulls the current official agent.
 
@@ -31,15 +30,14 @@ This skill differs from the generic copy-trade flow in three ways. Everything el
 ### 1. Single asset: HYPE only
 `allowed_coins` is locked to `["HYPE"]`. The curated agent trades HYPE perps; the skill only ever places HYPE orders. Never widen the whitelist.
 
-### 2. Isolated sub-account (`sc-hype`)
-Trades are routed into a dedicated Hyperliquid **sub-account** named `sc-hype` under the user's master wallet, so HYPE margin and PnL are isolated from the user's other SuperClaw skills.
+### 2. Dedicated account (isolation)
+This skill runs on its **own dedicated Hyperliquid account** — a fresh wallet used only for HYPE copy-trading — so HYPE margin and PnL are fully isolated from the user's other SuperClaw skills. There is no separate sub-account; trades execute directly on that wallet's account (`require_subaccount` is `false`).
 
-- After wallet authorization, the service attempts to **auto-create** `sc-hype` at start (`subaccount create`). If Hyperliquid rejects agent-signed creation, the Bot guides the user to create a sub-account named `sc-hype` in the Hyperliquid UI and set its address: `config set subaccount_address 0x...`.
-- The user must then **fund `sc-hype`** by transferring USDC from their main Hyperliquid account into the sub-account (Hyperliquid Portfolio → Transfer). This is the funding step — the Bot must tell the user funds go into the `sc-hype` sub-account, not the main account and not an on-chain transfer to an address.
-- `service start` will refuse to run if `require_subaccount` is set and `sc-hype` has no address — it will print setup guidance instead of silently trading on the master account.
-- Check status anytime with `subaccount show`.
+- During setup, the Bot must tell the user to connect/authorize with a **new or dedicated wallet** for this skill — **not** a wallet already used by another SuperClaw skill. That dedicated wallet is what provides isolation.
+- Trades execute directly on that wallet's Hyperliquid account.
+- Funding: the user funds **that dedicated wallet's Hyperliquid account** with USDC (Hyperliquid deposit). Be explicit that funds go to the dedicated wallet's HL account — not an on-chain transfer to an address.
 
-Setup order for this skill: **wallet setup → create + fund `sc-hype` → configure parameters → start.**
+Setup order for this skill: **wallet setup (dedicated wallet) → fund it → configure parameters → start.**
 
 ### 3. Agent track record (`agent-info`)
 When the user asks to see the agent's performance / track record / "what am I getting into," the Bot runs `agent-info` (no signature needed; works before funding) and presents the card. It pulls live metrics from the public Moss endpoint:
